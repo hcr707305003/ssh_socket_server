@@ -35,10 +35,10 @@ wss.on('connection', ws => {
                 return;
             }
 
-            // 如果已有SSH连接，则先关闭现有的
-            if (sessions[clientId]?.sshConnection) {
-                sessions[clientId].sshConnection.end();
-            }
+            // // 如果已有SSH连接，则先关闭现有的
+            // if (sessions[clientId]?.sshConnection) {
+            //     sessions[clientId].sshConnection.end();
+            // }
 
             // 创建新的SSH连接
             const sshConnection = new Client();
