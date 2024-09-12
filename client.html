@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSH Command Output</title>
+    <script>
+        let ws = null;
+        let pendingPayload = null; // 存储待发送的数据
+
+        const createWebSocket = () => {
+            // 自行修改端口号
+            ws = new WebSocket('ws://39.108.171.142:97');
+
+            ws.onopen = () => {
+                console.log('WebSocket connection opened.');
+                // 如果有待发送的数据，则发送
+                if (pendingPayload) {
+                    ws.send(pendingPayload);
+                    pendingPayload = null; // 清除待发送的数据
+                }
+            };
+
+            ws.onmessage = (event) => {
+                const output = document.getElementById('output');
+                // 去除前后空格
+                const data = event.data.trim();
+                // 将处理后的数据添加到输出区域
+                output.textContent += data + '\n';
+                // 自动滚动到底部
+                output.scrollTop = output.scrollHeight;
+
+                // 检查是否是命令执行完毕的标志（例如通过某种特定的消息）
+                if (data.includes('Command executed with exit code')) {
+                    ws.close(); // 输出完毕后关闭连接
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket Error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket connection closed.');
+            };
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('sendCommand').addEventListener('click', () => {
+                const command = document.getElementById('command').value;
+                const host = document.getElementById('host').value;
+                const port = parseInt(document.getElementById('port').value, 10);
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                // 关闭现有的 WebSocket 连接（如果存在）
+                if (ws) {
+                    ws.close();
+                }
+
+                // 创建新的 WebSocket 连接
+                createWebSocket();
+                
+                // 构建要发送的数据
+                const payload = JSON.stringify({ command, host, port, username, password });
+
+                // 如果连接尚未打开，将数据保存到 pendingPayload 中
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(payload);
+                } else {
+                    pendingPayload = payload; // 等待连接打开后再发送
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>Send SSH Command</h1>
+    <input type="text" id="command" placeholder="Command" value="sudo apt update">
+    <input type="text" id="host" placeholder="Host" value="39.108.171.142">
+    <input type="number" id="port" placeholder="Port" value="36757">
+    <input type="text" id="username" placeholder="Username" value="develop_admin">
+    <input type="password" id="password" placeholder="Password" value="hcr707305003">
+    <button id="sendCommand">Send Command</button>
+    <h2>Output</h2>
+    <pre id="output" style="border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto;"></pre>
+</body>
+</html>
